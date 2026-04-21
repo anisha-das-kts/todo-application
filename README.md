@@ -1,16 +1,134 @@
-# React + Vite
+# 📝 Todo Application (MERN Stack)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack Todo app built with **React (Vite)**, **Node.js (Express)**, and **MongoDB Atlas**.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Features
 
-## React Compiler
+* Add, delete, and update todos
+* Mark todos as completed
+* Add notes to each todo (using MongoDB aggregation)
+* Infinite scroll with pagination
+* Backend API with MongoDB Atlas
+* Clean and responsive UI
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🛠 Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Frontend
+
+* React (Vite)
+* JavaScript (ES6+)
+* CSS
+
+### Backend
+
+* Node.js
+* Express.js
+
+### Database
+
+* MongoDB Atlas (Cloud Database)
+* Mongoose
+
+---
+
+## 📁 Project Structure
+
+```
+todo-app/
+│
+├── client/      # React Frontend (Vite)
+├── server/      # Node.js Backend
+└── README.md
+```
+
+---
+
+## ⚙️ Setup Instructions
+
+### 1️⃣ Clone the repository
+
+```bash
+git clone https://github.com/your-username/todo-app.git
+cd todo-app
+```
+
+---
+
+## 🖥 Frontend Setup (React + Vite)
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+👉 Runs on: http://localhost:5173
+
+---
+
+## 🔧 Backend Setup (Node + Express)
+
+```bash
+cd server
+npm install
+node app.js
+```
+
+👉 Runs on: http://localhost:3000
+
+---
+
+## 🌐 MongoDB Atlas Setup
+
+1. Go to https://www.mongodb.com/
+2. Create a free cluster
+3. Create a database user
+4. Allow your IP (or allow all for development)
+5. Copy your connection string
+
+Example:
+
+```
+mongodb+srv://<username>:<password>@cluster0.mongodb.net/?retryWrites=true&w=majority
+```
+
+6. Paste it in your backend (`server/app.js`):
+
+```js
+mongoose.connect("YOUR_MONGODB_ATLAS_URI")
+```
+
+---
+
+## 🔗 API Endpoints
+
+### Todos
+
+* GET /todos
+* POST /todos
+* PUT /todos/:id
+* DELETE /todos/:id
+
+### Notes
+
+* POST /notes
+
+### Aggregated
+
+* GET /todos-with-notes?limit=5&skip=0
+
+---
+
+## 👩‍💻 Author
+
+Anisha Das
+
+---
+
+## ⭐ Contribute
+
+Feel free to fork this repo and improve it!

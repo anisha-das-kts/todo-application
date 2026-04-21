@@ -75,7 +75,7 @@ npm run dev
 ```bash
 cd server
 npm install
-node app.js
+npm start
 ```
 
 👉 Runs on: http://localhost:3000

@@ -13,6 +13,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [input, setInput] = useState("");
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const loaderRef = useRef();
   const skipRef = useRef(0);
@@ -27,63 +28,64 @@ function App() {
   // }, []);
 
   useEffect(() => {
-    if (initialFetchDone.current) return;
-    initialFetchDone.current = true;
+    const fetchInitial = async () => {
+      const res = await fetch(
+        `http://localhost:3000/todos-with-notes?limit=${limit}&skip=0`,
+      );
 
-    fetch(`http://localhost:3000/todos-with-notes?limit=${limit}&skip=0`)
-      .then((res) => res.json())
-      .then((data) => {
-        setTodos(data.data);
-        setSkip(limit);
-        skipRef.current = limit;
-        setHasMore(true);
-      })
-      .catch((err) => console.log(err));
+      const data = await res.json();
+
+      setTodos(data.data);
+
+      skipRef.current = limit;
+      setSkip(limit);
+
+      setHasMore(data.hasMore);
+
+      setInitialLoading(false);
+    };
+
+    fetchInitial();
   }, []);
 
   useEffect(() => {
+    if (initialLoading) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         const first = entries[0];
-        if (first.isIntersecting && !loading && hasMore) {
+
+        if (first.isIntersecting && !fetchingRef.current && hasMore) {
           loadMoreTodos();
         }
       },
-      { threshold: 0.3 },
+      { threshold: 1 },
     );
 
     const currentLoader = loaderRef.current;
 
-    if (currentLoader) {
-      observer.observe(currentLoader);
-    }
+    if (currentLoader) observer.observe(currentLoader);
 
     return () => {
       if (currentLoader) observer.unobserve(currentLoader);
     };
-  }, []);
+  }, [initialLoading, hasMore]);
 
   const loadMoreTodos = async () => {
-    if (loading || !hasMore) return;
+    if (fetchingRef.current || !hasMore) return;
 
+    fetchingRef.current = true;
     setLoading(true);
 
     try {
       const res = await fetch(
         `http://localhost:3000/todos-with-notes?limit=${limit}&skip=${skipRef.current}`,
-        { cache: "no-store" },
       );
 
       const data = await res.json();
       const todosFromAPI = data?.data || [];
 
       await new Promise((resolve) => setTimeout(resolve, 3000));
-
-      if (todosFromAPI.length === 0) {
-        setHasMore(false);
-        setLoading(false);
-        return;
-      }
 
       setTodos((prev) => {
         const ids = new Set(prev.map((t) => String(t._id)));
@@ -94,14 +96,13 @@ function App() {
       skipRef.current += limit;
       setSkip(skipRef.current);
 
-      if (todosFromAPI.length < limit) {
-        setHasMore(false);
-      }
+      setHasMore(data.hasMore);
     } catch (err) {
       console.log(err);
     }
 
     setLoading(false);
+    fetchingRef.current = false;
   };
 
   const addTodos = async () => {

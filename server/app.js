@@ -19,9 +19,11 @@ app.set("etag", false);
 
 // Connect DB
 mongoose
-  .connect("mongodb://127.0.0.1:27017/todo")
-  .then(() => console.log("MongoDB Connected..."))
-  .catch((err) => console.log(err));
+  .connect(
+    "mongodb://anishadaskts2001_db_user:gwJvPXJeg_A3Ks3@ac-mdo5lid-shard-00-00.r0r18ka.mongodb.net:27017,ac-mdo5lid-shard-00-01.r0r18ka.mongodb.net:27017,ac-mdo5lid-shard-00-02.r0r18ka.mongodb.net:27017/?ssl=true&replicaSet=atlas-ka4rpu-shard-0&authSource=admin&appName=Cluster0",
+  )
+  .then(() => console.log("Connected to MongoDB Atlas..."))
+  .catch((err) => console.log("DB Error:", err.message));
 
 // Get All API
 app.get("/todos", async (req, res) => {
@@ -33,7 +35,7 @@ app.get("/todos", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 
-  res.json(todos);
+  // res.json(todos);
 });
 
 // Get By ID API
@@ -58,10 +60,8 @@ app.get("/todos-with-notes", async (req, res) => {
 
     const result = await Todo.aggregate([
       { $sort: { _id: 1 } },
-
       { $skip: skip },
       { $limit: limit },
-
       {
         $lookup: {
           from: "notes",
@@ -70,7 +70,6 @@ app.get("/todos-with-notes", async (req, res) => {
           as: "notes",
         },
       },
-
       {
         $addFields: {
           notes: { $ifNull: ["$notes", []] },
@@ -78,7 +77,9 @@ app.get("/todos-with-notes", async (req, res) => {
       },
     ]);
 
-    const hasMore = result.length === limit;
+    const totalCount = await Todo.countDocuments();
+
+    const hasMore = skip + result.length < totalCount;
 
     res.json({
       data: result,

@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 // Schema
 const todoSchema = new mongoose.Schema({
+  userId: mongoose.Schema.Types.ObjectId,
   text: {
     type: String,
     required: true,
@@ -13,6 +14,7 @@ const todoSchema = new mongoose.Schema({
 });
 
 const noteSchema = new mongoose.Schema({
+  userId: mongoose.Schema.Types.ObjectId,
   todoId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Todo",

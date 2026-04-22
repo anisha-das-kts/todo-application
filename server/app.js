@@ -1,8 +1,10 @@
 const express = require("express");
+const env = require("dotenv").config();
 const app = express();
 const cors = require("cors");
 const mongoose = require("mongoose");
-const { Todo, Note } = require("./todo");
+const { Todo, Note, User } = require("./todo");
+const authMiddleware = require("./middleware/auth");
 const port = 3000;
 // const bodyParser = require("body-parser");
 
@@ -12,6 +14,10 @@ app.use((req, res, next) => {
   res.set("Cache-Control", "no-store");
   next();
 });
+app.use((req, res, next) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  next();
+});
 app.set("etag", false);
 // app.use(bodyParser.json());
 
@@ -19,23 +25,19 @@ app.set("etag", false);
 
 // Connect DB
 mongoose
-  .connect(
-    "mongodb://anishadaskts2001_db_user:gwJvPXJeg_A3Ks3@ac-mdo5lid-shard-00-00.r0r18ka.mongodb.net:27017,ac-mdo5lid-shard-00-01.r0r18ka.mongodb.net:27017,ac-mdo5lid-shard-00-02.r0r18ka.mongodb.net:27017/?ssl=true&replicaSet=atlas-ka4rpu-shard-0&authSource=admin&appName=Cluster0",
-  )
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("Connected to MongoDB Atlas..."))
   .catch((err) => console.log("DB Error:", err.message));
 
 // Get All API
-app.get("/todos", async (req, res) => {
+app.get("/todos", authMiddleware, async (req, res) => {
   // res.send("Get all todos");
   try {
-    const todos = await Todo.find();
+    const todos = await Todo.find({ userId: req.user._id });
     res.json(todos);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-
-  // res.json(todos);
 });
 
 // Get By ID API
@@ -53,12 +55,15 @@ app.get("/todos/:id", async (req, res) => {
 });
 
 // Get API Aggregate
-app.get("/todos-with-notes", async (req, res) => {
+app.get("/todos-with-notes", authMiddleware, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 5;
     const skip = parseInt(req.query.skip) || 0;
 
     const result = await Todo.aggregate([
+      {
+        $match: { userId: req.user._id },
+      },
       { $sort: { _id: 1 } },
       { $skip: skip },
       { $limit: limit },
@@ -70,14 +75,18 @@ app.get("/todos-with-notes", async (req, res) => {
           as: "notes",
         },
       },
-      {
-        $addFields: {
-          notes: { $ifNull: ["$notes", []] },
-        },
-      },
+      // {
+      //   $addFields: {
+      //     notes: { $ifNull: ["$notes", []] },
+      //   },
+      // },
     ]);
 
-    const totalCount = await Todo.countDocuments();
+    const totalCount = await Todo.countDocuments({
+      userId: req.user._id,
+    });
+
+    // const totalCount = await Todo.countDocuments();
 
     const hasMore = skip + result.length < totalCount;
 
@@ -86,6 +95,7 @@ app.get("/todos-with-notes", async (req, res) => {
       hasMore,
     });
   } catch (err) {
+    console.log("ERROR:", err.message);
     res.status(500).json({
       message: "Server Error",
       error: err.message,
@@ -94,7 +104,7 @@ app.get("/todos-with-notes", async (req, res) => {
 });
 
 // Post API or Create Todo API
-app.post("/todos", async (req, res) => {
+app.post("/todos", authMiddleware, async (req, res) => {
   try {
     const text = req.body?.text;
 
@@ -102,7 +112,10 @@ app.post("/todos", async (req, res) => {
       return res.status(400).json({ message: "Text is Required." });
     }
 
-    const newTodo = await Todo.create({ text });
+    const newTodo = await Todo.create({
+      userId: req.user._id,
+      text,
+    });
 
     res.status(201).json(newTodo);
   } catch (err) {
@@ -111,7 +124,7 @@ app.post("/todos", async (req, res) => {
 });
 
 // Create Note API
-app.post("/notes", async (req, res) => {
+app.post("/notes", authMiddleware, async (req, res) => {
   try {
     const { todoId, text_description } = req.body;
 
@@ -119,7 +132,11 @@ app.post("/notes", async (req, res) => {
       return res.status(400).json({ message: "All fields required." });
     }
 
-    const newNote = await Note.create({ todoId, text_description });
+    const newNote = await Note.create({
+      userId: req.user._id,
+      todoId,
+      text_description,
+    });
 
     res.json(newNote);
   } catch (err) {
@@ -128,9 +145,13 @@ app.post("/notes", async (req, res) => {
 });
 
 // Put API or Update API
-app.put("/todos/:id", async (req, res) => {
+app.put("/todos/:id", authMiddleware, async (req, res) => {
   try {
-    const todo = await Todo.findById(req.params.id);
+    // const todo = await Todo.findById(req.params.id);
+    const todo = await Todo.findOne({
+      _id: req.params.id,
+      userId: req.user._id,
+    });
 
     if (!todo) {
       return res.status(404).json({ message: "Not found" });
@@ -146,9 +167,13 @@ app.put("/todos/:id", async (req, res) => {
 });
 
 // Delete API
-app.delete("/todos/:id", async (req, res) => {
+app.delete("/todos/:id", authMiddleware, async (req, res) => {
   try {
-    const deleted = await Todo.findByIdAndDelete(req.params.id);
+    // const deleted = await Todo.findByIdAndDelete(req.params.id);
+    const deleted = await Todo.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user._id,
+    });
 
     if (!deleted) {
       return res.status(404).json({ message: "Not found" });
